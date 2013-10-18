@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Rifa Grooveshark - Programando.la</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aprender programacion gratis por que aqui SI estamos mejorandola.">
+    <meta name="author" content="Ivan castellanos">
+    <link href="css/bootstrap.min.css?nocahe=2" rel="stylesheet" type="text/css" />    
+    <link href="css/bootstrap-responsive.css?nocahe=2" rel="stylesheet" type="text/css" />
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="../assets/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="../assets/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="../assets/ico/apple-touch-icon-57-precomposed.png">
+    <style type="text/css">
+
+    .container {
+      margin-top: 60px;
+    }
+
+
+    h1, h2, h3, h4, p, .mini {
+      margin-left: 40px;
+      margin-right: 40px;
+    }
+
+    a {
+      color: #7CB600;
+      font-weight: bold;
+    }
+
+    h1 {
+      margin-top: 35px;
+      margin-bottom: 10px;
+      line-height: 66px;
+      font-size: 52px;
+    }
+
+    .p {
+      text-align: justify;
+      line-height: 27px;
+      font-size: 16px;
+      padding-right: 20px;
+    }
+
+    h2 {
+    margin-top: 60px;
+    font-size: 26px;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgb(162, 201, 41);
+    padding-left: 35px;
+    margin-left: 0px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-bottom: 30px;
+    clear: both;
+    text-shadow: 1px 1px 2px rgb(43, 66, 27);
+
+    color: white;
+    }
+
+    .mini {
+      border: 1px solid white;
+      box-shadow: 3px 3px 8px rgb(190, 190, 190);
+      border-radius: 50px;
+      float: left;
+    }
+
+    .home {
+      position: absolute;
+      top: -51px;
+      left: 40px;
+      cursor: pointer;
+      overflow: hidden;
+      width: 62px;
+    }
+
+    .home img {
+      box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.2);
+      border-radius: 7px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .home img:hover {
+      box-shadow: 0px 3px 2px rgba(-1, 0, 0, 0.4);
+      margin-left: 2px;
+    }
+
+    h3 {
+      clear: left;
+      float: left;
+      padding-bottom: 10px;
+      color: #CCC;
+      width: 182px;
+      height: 40px;
+      font-size: 20px;
+      text-align: center;
+      margin: 0;
+    }
+
+    .qtip-title {
+      color: #AAA;
+      font-weight: bold;
+    }
+
+    @media (max-width: 767px) {
+      .home img, .home img:hover {
+        border-radius: 7px;
+        box-shadow: none;
+        margin-left: 0;
+      }
+
+      .home {
+        overflow: visible;
+        padding-top: 10px;
+        top: -60px;
+        padding-bottom: 10px;
+        width: 100%;
+        border-radius: 8px;
+        text-align: center;
+        left: 0;
+        background: rgb(170, 204, 62);
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+      }
+    }
+    </style>
+  </head>
+
+  <body class="nojs">
+
+    <script>document.body && (document.body.className = "");</script>
+
+    <div class="alert-message info hide">
+        <a class="close" href="#">×</a>
+        <p></p>
+    </div>
+    <script>
+    var msg = decodeURIComponent(document.cookie).match(/message=[^@;]+/);
+    if(msg) {
+      msg = msg ? msg[0].replace("message=", "").replace(/\+/g, ' ') : '';
+      document.getElementsByTagName("div")[0].className += 'no';
+      document.getElementsByTagName("p")[0].innerHTML = msg || 'Operacion realizada con satisfaccion!';
+      document.cookie = "message=@;";
+    }
+    </script>
+
+    <div class="container">
+
+      <a class="home" href="./" title="Ir al directorio!"><img role="presentation" aria-hidden="true" src="img/return_btn.png" alt="icon"></a>
+      <h1>Programando.la rifa una cuenta "Grooveshark Anywhere"!</h1>
+      <h2>No hay nada mejor que programar y la buena musica</h2>
+      <img class="mini" src="img/mini_gs.jpg" />
+      <h3>Precio: <span>$0</span></h3>
+      <p class="p"><a href="http://Grooveshark.com">Grooveshark</a> es el sitio mas visitado en el mundo para escuchar musica en Internet y estamos seguros que has estado <a href="http://programando.la/">programandola</a> y que mejor que tomarse un descanso escuchando buena musica; es por eso que <a href="http://programando.la/">programandola</a> rifara entre quienes hagan un RT (retweet) a <a href="https://twitter.com/Programandola/status/306024499088875523">este mensaje en twitter</a> una cuenta "Grooveshark Anywhere" de 1 año la cual te permite llevar todas las canciones a cualquier lugar en tu iPhone, iPod, Android o Blackberry!</p>
+      <h2>Cuando y como se hara la rifa?</h2>
+      <p class="p">El dia Jueves 15 de Marzo del 2013 se hace entrega al ganador. El sorteo es definido por las 2 ultimas cifras del dia Jueves 14 de Marzo del sorteo de la <a href="http://www.loteriadebogota.com/html/index.php?option=com_wrapper&view=wrapper&Itemid=11">loteria de bogota</a>; lo que quiere decir que solo los 100 primeros retweets tienen posibilidades de ganar asi que mejor no esperes demasiado a darle RT!</p>
+      
+
+      <footer>
+      <hr>
+        <p>Creado por <a class="author" href="http://twitter.com/ivanca">Iv&aacute;n Castellanos</a><br>El logo animado en este sitio web es una parodia de mejorando.la<br>
+          <span title="Copyright (c) 2012 Ivan Castellanos.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.">MIT License</span>
+
+        <a href="https://github.com/AltIvan/programando.la">Fork it on github</a></p>
+      </footer>
+
+    </div>
+
+    <div id="myModal" class="modal hide fade in" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">Contribuir un link</h3>
+      </div>
+      <div class="modal-body">
+    <form id="link-form" action="save_url.php" method="post">
+
+      <fieldset>
+        <label >Titulo:*</label>
+        <input type="text" name="name" id="name" placeholder="Escriba un titulo descriptivo." class="large-input" />
+
+        <label >Link:*</label>
+        <input type="text" name="link" id="link" placeholder="Ingrese la URL del documento o video" class="large-input" />
+
+        <label >Twitter:</label>
+        <input type="text" name="twitter" id="twitter" placeholder="Opcional"  maxlength="20" /> 
+        
+        <input type="hidden" name="lang" id="lang" /> 
+        <button type="submit" class="btn submit-link">Submit</button>
+      </fieldset>
+
+    </form>
+    </div>
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+      <script src="js/jquery.qtip-1.0.0-rc3.min.js"></script> 
+      <script type="text/javascript">
+      $(".home").qtip({
+        style: {
+          name: 'light',
+          tip: true,
+          color: '#BBB',
+          fontWeight: 'bold'}, 
+        position: { 
+          corner: {
+            target: 'rightMiddle',
+            tooltip: 'leftMiddle'
+          },
+        adjust: { 
+          screen: true
+        }}});
+      </script>
+          
+    </div>
+
+  </body>
+</html>
