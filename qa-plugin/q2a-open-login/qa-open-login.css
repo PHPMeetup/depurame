@@ -1,0 +1,25 @@
+
+	/* Open Login buttons */
+	.open-login-button.context-menu.zocial {
+		margin-top: -4px;
+		font-size: 11px;
+	}
+	
+	.open-login-button.context-login, .open-login-button.context-register {
+		font-weight: bold;
+	}
+	
+	.open-login-profile, .open-login-accounts {
+		padding-bottom: 20px;
+	}
+	
+	.qa-nav-user { /* this should not have negative effects */
+		height: 24px;
+		margin-top: 4px;
+	}
+	
+	.qa-template-login .qa-body-wrapper a.zocial {
+		margin-top: 5px;
+		width: 30%;
+	}
+	/* End of Open Login buttons */
