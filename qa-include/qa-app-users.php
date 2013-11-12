@@ -30,7 +30,6 @@
 	}
 
 	define('QA_USER_LEVEL_BASIC', 0);
-	define('QA_USER_LEVEL_APPROVED', 10);
 	define('QA_USER_LEVEL_EXPERT', 20);
 	define('QA_USER_LEVEL_EDITOR', 50);
 	define('QA_USER_LEVEL_MODERATOR', 80);
@@ -45,15 +44,9 @@
 	define('QA_USER_FLAGS_NO_MAILINGS', 32);
 	define('QA_USER_FLAGS_WELCOME_NOTICE', 64);
 	define('QA_USER_FLAGS_MUST_CONFIRM', 128);
-	define('QA_USER_FLAGS_NO_WALL_POSTS', 256);
-	define('QA_USER_FLAGS_MUST_APPROVE', 512);
 	
 	define('QA_FIELD_FLAGS_MULTI_LINE', 1);
 	define('QA_FIELD_FLAGS_LINK_URL', 2);
-	define('QA_FIELD_FLAGS_ON_REGISTER', 4);
-	
-	@define('QA_FORM_EXPIRY_SECS', 86400); // how many seconds a form is valid for submission
-	@define('QA_FORM_KEY_LENGTH', 32);
 
 	
 	if (QA_FINAL_EXTERNAL_USERS) {
@@ -157,10 +150,8 @@
 	*/
 		{
 			if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-			
-			$prefix=defined('QA_MYSQL_USERS_PREFIX') ? QA_MYSQL_USERS_PREFIX : QA_MYSQL_TABLE_PREFIX;
-			
-			return md5(QA_FINAL_MYSQL_HOSTNAME.'/'.QA_FINAL_MYSQL_USERNAME.'/'.QA_FINAL_MYSQL_PASSWORD.'/'.QA_FINAL_MYSQL_DATABASE.'/'.$prefix);
+		
+			return md5(QA_FINAL_MYSQL_HOSTNAME.'/'.QA_FINAL_MYSQL_USERNAME.'/'.QA_FINAL_MYSQL_PASSWORD.'/'.QA_FINAL_MYSQL_DATABASE.'/'.QA_MYSQL_TABLE_PREFIX);
 		}
 		
 		
@@ -312,15 +303,6 @@
 				
 				} else {
 					$handle=qa_handle_make_valid(@$fields['handle']);
-				
-					if (strlen(@$fields['email'])) { // remove email address if it will cause a duplicate
-						$emailusers=qa_db_user_find_by_email($fields['email']);
-						if (count($emailusers)) {
-							qa_redirect('login', array('e' => $fields['email'], 'ee' => '1'));
-							unset($fields['email']);
-							unset($fields['confirmed']);
-						}
-					}
 					
 					$userid=qa_create_new_user((string)@$fields['email'], null /* no password */, $handle,
 						isset($fields['level']) ? $fields['level'] : QA_USER_LEVEL_BASIC, @$fields['confirmed']);
@@ -452,15 +434,15 @@
 		}
 
 
-		function qa_get_one_user_html($handle, $microformats=false, $favorited=false)
+		function qa_get_one_user_html($handle, $microformats)
 	/*
-		Return HTML to display for user with username $handle, with microformats if $microformats is true. Set $favorited to true to show the user as favorited.
+		Return HTML to display for user with username $handle
 	*/
 		{
 			if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
-			return strlen($handle) ? ('<a href="'.qa_path_html('user/'.$handle).'" class="qa-user-link'
-				.($favorited ? ' qa-user-favorited' : '').($microformats ? ' url nickname' : '').'">'.qa_html($handle).'</a>') : '';
+			return strlen($handle) ? ('<A HREF="'.qa_path_html('user/'.$handle).
+				'" CLASS="'.($microformats ? ' url nickname' : '').'">'.qa_html($handle).'</A>') : '';
 		}
 		
 		
@@ -483,7 +465,7 @@
 			else
 				$html=null;
 				
-			return (isset($html) && strlen($handle)) ? ('<a href="'.qa_path_html('user/'.$handle).'" class="qa-avatar-link">'.$html.'</a>') : $html;
+			return (isset($html) && strlen($handle)) ? ('<A HREF="'.qa_path_html('user/'.$handle).'" CLASS="qa-avatar-link">'.$html.'</A>') : $html;
 		}
 		
 
@@ -528,8 +510,6 @@
 				$string='users/level_editor';
 			elseif ($level>=QA_USER_LEVEL_EXPERT)
 				$string='users/level_expert';
-			elseif ($level>=QA_USER_LEVEL_APPROVED)
-				$string='users/approved_user';
 			else
 				$string='users/registered_user';
 			
@@ -602,17 +582,6 @@
 	}
 
 	
-	function qa_get_logged_in_levels()
-/*
-	Return an array of all the specific (e.g. per category) level privileges for the logged in user, retrieving from the database if necessary
-*/
-	{
-		require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-		
-		return qa_db_get_pending_result('userlevels', qa_db_user_levels_selectspec(qa_get_logged_in_userid(), true));
-	}
-	
-	
 	function qa_userids_to_handles($userids)
 /*
 	Return an array mapping each userid in $userids to that user's handle (public username), or to null if not found
@@ -670,111 +639,11 @@
 	}
 	
 	
-	function qa_handle_to_userid($handle)
-/*
-	Return the userid corresponding to $handle (not case- or accent-sensitive)
-*/
-	{
-		if (QA_FINAL_EXTERNAL_USERS)
-			$handleuserids=qa_get_userids_from_public(array($handle));
-
-		else {
-			require_once QA_INCLUDE_DIR.'qa-db-users.php';
-			$handleuserids=qa_db_user_get_handle_userids(array($handle));
-		}
-		
-		if (count($handleuserids)==1)
-			return reset($handleuserids); // don't use $handleuserids[$handle] since capitalization might be different
-		
-		return null;
-	}
-	
-	
-	function qa_user_level_for_categories($categoryids)
-/*
-	Return the level of the logged in user for a post with $categoryids (expressing the full hierarchy to the final category)
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-
-		require_once QA_INCLUDE_DIR.'qa-app-updates.php';
-
-		$level=qa_get_logged_in_level();
-		
-		if (count($categoryids)) {
-			$userlevels=qa_get_logged_in_levels();
-			
-			$categorylevels=array(); // create a map
-			foreach ($userlevels as $userlevel)
-				if ($userlevel['entitytype']==QA_ENTITY_CATEGORY)
-					$categorylevels[$userlevel['entityid']]=$userlevel['level'];
-			
-			foreach ($categoryids as $categoryid)
-				$level=max($level, @$categorylevels[$categoryid]);
-		}
-		
-		return $level;
-	}
-	
-	
-	function qa_user_level_for_post($post)
-/*
-	Return the level of the logged in user for $post, as retrieved from the database
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-		
-		if (strlen(@$post['categoryids']))
-			return qa_user_level_for_categories(explode(',', $post['categoryids']));
-
-		return null;
-	}
-	
-	
-	function qa_user_level_maximum()
-/*
-	Return the maximum possible level of the logged in user in any context (i.e. for any category)
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-		
-		$level=qa_get_logged_in_level();
-
-		$userlevels=qa_get_logged_in_levels();
-		foreach ($userlevels as $userlevel)
-			$level=max($level, $userlevel['level']);
-
-		return $level;
-	}
-	
-
-	function qa_user_post_permit_error($permitoption, $post, $limitaction=null, $checkblocks=true)
-/*
-	Check whether the logged in user has permission to perform $permitoption on post $post (from the database)
-	Other parameters and the return value are as for qa_user_permit_error(...)
-*/
-	{
-		return qa_user_permit_error($permitoption, $limitaction, qa_user_level_for_post($post), $checkblocks);
-	}
-	
-	
-	function qa_user_maximum_permit_error($permitoption, $limitaction=null, $checkblocks=true)
-/*
-	Check whether the logged in user would have permittion to perform $permitoption in any context (i.e. for any category)
-	Other parameters and the return value are as for qa_user_permit_error(...)
-*/
-	{
-		return qa_user_permit_error($permitoption, $limitaction, qa_user_level_maximum(), $checkblocks);
-	}
-	
-	
-	function qa_user_permit_error($permitoption=null, $limitaction=null, $userlevel=null, $checkblocks=true)
+	function qa_user_permit_error($permitoption=null, $limitaction=null)
 /*
 	Check whether the logged in user has permission to perform $permitoption. If $permitoption is null, this simply
 	checks whether the user is blocked. Optionally provide an $limitaction (see top of qa-app-limits.php) to also check
-	against user or IP rate limits. You can pass in a QA_USER_LEVEL_* constant in $userlevel to consider the user at a
-	different level to usual (e.g. if they are performing this action in a category for which they have elevated
-	privileges). To ignore the user's blocked status, set $checkblocks to false.
+	against user or IP rate limits.
 
 	Possible results, in order of priority (i.e. if more than one reason, the first will be given):
 	'level' => a special privilege level (e.g. expert) or minimum number of points is required
@@ -782,7 +651,6 @@
 	'userblock' => the user has been blocked
 	'ipblock' => the ip address has been blocked
 	'confirm' => the user should confirm their email address
-	'approve' => the user needs to be approved by the site admins
 	'limit' => the user or IP address has reached a rate limit (if $limitaction specified)
 	false => the operation can go ahead
 */
@@ -792,26 +660,18 @@
 		require_once QA_INCLUDE_DIR.'qa-app-limits.php';
 		
 		$userid=qa_get_logged_in_userid();
-		if (!isset($userlevel))
-			$userlevel=qa_get_logged_in_level();
-
 		$flags=qa_get_logged_in_flags();
-		if (!$checkblocks)
-			$flags&=~QA_USER_FLAGS_USER_BLOCKED;
 
-		$error=qa_permit_error($permitoption, $userid, $userlevel, $flags);
+		$error=qa_permit_error($permitoption, $userid, qa_get_logged_in_level(), $flags);
 		
-		if ($checkblocks && (!$error) && qa_is_ip_blocked())
+		if ((!$error) && qa_is_ip_blocked())
 			$error='ipblock';
 			
-		if ((!$error) && isset($userid) && ($flags & QA_USER_FLAGS_MUST_CONFIRM) && qa_opt('confirm_user_emails'))
+		if ((!$error) && isset($userid) && ($flags & QA_USER_FLAGS_MUST_CONFIRM))
 			$error='confirm';
-			
-		if ((!$error) && isset($userid) && ($flags & QA_USER_FLAGS_MUST_APPROVE) && qa_opt('moderate_users'))
-			$error='approve';
 		
 		if (isset($limitaction) && !$error)
-			if (qa_user_limits_remaining($limitaction)<=0)
+			if (qa_limits_remaining(qa_get_logged_in_userid(), $limitaction)<=0)
 				$error='limit';
 		
 		return $error;
@@ -826,20 +686,17 @@
 */
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-
+		
 		$permit=isset($permitoption) ? qa_opt($permitoption) : QA_PERMIT_ALL;
 
-		if (isset($userid) && (($permit==QA_PERMIT_POINTS) || ($permit==QA_PERMIT_POINTS_CONFIRMED) || ($permit==QA_PERMIT_APPROVED_POINTS)) ) {
-				// deal with points threshold by converting as appropriate
-			
+		if (isset($userid) && (($permit==QA_PERMIT_POINTS) || ($permit==QA_PERMIT_POINTS_CONFIRMED)) ) { // deal with points threshold by converting as appropriate
 			if ( (!isset($userpoints)) && ($userid==qa_get_logged_in_userid()) )
 				$userpoints=qa_get_logged_in_points(); // allow late retrieval of points (to avoid unnecessary DB query when using external users)
 		
 			if ($userpoints>=qa_opt($permitoption.'_points'))
-				$permit=($permit==QA_PERMIT_APPROVED_POINTS) ? QA_PERMIT_APPROVED :
-					(($permit==QA_PERMIT_POINTS_CONFIRMED) ? QA_PERMIT_CONFIRMED : QA_PERMIT_USERS); // convert if user has enough points
+				$permit=($permit==QA_PERMIT_POINTS_CONFIRMED) ? QA_PERMIT_CONFIRMED : QA_PERMIT_USERS; // convert if user has enough points
 			else
-				$permit=QA_PERMIT_EXPERTS; // otherwise show a generic message so they're not tempted to collect points just for this
+				$permit=QA_PERMIT_EXPERTS; // otherwise, only special users pass
 		}
 		
 		return qa_permit_value_error($permit, $userid, $userlevel, $userflags);
@@ -866,7 +723,7 @@
 			
 			elseif (
 				QA_FINAL_EXTERNAL_USERS || // not currently supported by single sign-on integration
-				($userlevel>=QA_PERMIT_APPROVED) || // if user approved or assigned to a higher level, no need
+				($userlevel>=QA_USER_LEVEL_EXPERT) || // if user assigned to a higher level, no need
 				($userflags & QA_USER_FLAGS_EMAIL_CONFIRMED) || // actual confirmation
 				(!qa_opt('confirm_user_emails')) // if this option off, we can't ask it of the user
 			)
@@ -875,19 +732,6 @@
 			else
 				$error='confirm';
 
-		} elseif ($permit>=QA_PERMIT_APPROVED) {
-			if (!isset($userid))
-				$error='login';
-				
-			elseif (
-				($userlevel>=QA_USER_LEVEL_APPROVED) || // user has been approved
-				(!qa_opt('moderate_users')) // if this option off, we can't ask it of the user
-			)
-				$error=false;
-				
-			else
-				$error='approve';
-		
 		} elseif ($permit>=QA_PERMIT_EXPERTS)
 			$error=(isset($userid) && ($userlevel>=QA_USER_LEVEL_EXPERT)) ? false : 'level';
 			
@@ -910,61 +754,32 @@
 	}
 	
 	
-	function qa_user_captcha_reason($userlevel=null)
+	function qa_user_use_captcha()
 /*
-	Return whether a captcha is required for posts submitted by the current user. You can pass in a QA_USER_LEVEL_*
-	constant in $userlevel to consider the user at a different level to usual (e.g. if they are performing this action
-	in a category for which they have elevated privileges).
-	
-	Possible results:
-	'login' => captcha required because the user is not logged in
-	'approve' => captcha required because the user has not been approved
-	'confirm' => captcha required because the user has not confirmed their email address
-	false => captcha is not required
+	Return whether a captcha should be presented to the current user for writing posts
 */
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
-		$reason=false;
-		if (!isset($userlevel))
-			$userlevel=qa_get_logged_in_level();
+		$usecaptcha=false;
 		
-		if ($userlevel < QA_USER_LEVEL_APPROVED) { // approved users and above aren't shown captchas
+		if (qa_get_logged_in_level() < QA_USER_LEVEL_EXPERT) { // experts and above aren't shown captchas
 			$userid=qa_get_logged_in_userid();
 			
 			if (qa_opt('captcha_on_anon_post') && !isset($userid))
-				$reason='login';
-			elseif (qa_opt('moderate_users') && qa_opt('captcha_on_unapproved'))
-				$reason='approve';
+				$usecaptcha=true;
 			elseif (qa_opt('confirm_user_emails') && qa_opt('captcha_on_unconfirmed') && !(qa_get_logged_in_flags() & QA_USER_FLAGS_EMAIL_CONFIRMED) )
-				$reason='confirm';
+				$usecaptcha=true;
 		}
 		
-		return $reason;
-	}
-
-	
-	function qa_user_use_captcha($userlevel=null)
-/*
-	Return whether a captcha should be presented to the logged in user for writing posts. You can pass in a
-	QA_USER_LEVEL_* constant in $userlevel to consider the user at a different level to usual.
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-		
-		return qa_user_captcha_reason($userlevel)!=false;
+		return $usecaptcha;
 	}
 	
 	
-	function qa_user_moderation_reason($userlevel=null)
+	function qa_user_moderation_reason()
 /*
-	Return whether moderation is required for posts submitted by the current user. You can pass in a QA_USER_LEVEL_*
-constant in $userlevel to consider the user at a different level to usual (e.g. if they are performing this action
-in a category for which they have elevated privileges).
-	
-	Possible results:
+	Return whether moderation is required for posts submitted by the current user. Possible results:
 	'login' => moderation required because the user is not logged in
-	'approve' => moderation required because the user has not been approved
 	'confirm' => moderation required because the user has not confirmed their email address
 	'points' => moderation required because the user has insufficient points
 	false => moderation is not required
@@ -973,19 +788,15 @@ in a category for which they have elevated privileges).
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		$reason=false;
-		if (!isset($userlevel))
-			$userlevel=qa_get_logged_in_level();
 		
 		if (
-			($userlevel < QA_USER_LEVEL_EXPERT) && // experts and above aren't moderated
+			(qa_get_logged_in_level() < QA_USER_LEVEL_EXPERT) && // experts and above aren't moderated
 			qa_user_permit_error('permit_moderate') // if the user can approve posts, no point in moderating theirs
 		) {
 			$userid=qa_get_logged_in_userid();
 			
 			if (isset($userid)) {
-				if (qa_opt('moderate_users') && qa_opt('moderate_unapproved') && ($userlevel<QA_USER_LEVEL_APPROVED))
-					$reason='approve';
-				elseif (qa_opt('confirm_user_emails') && qa_opt('moderate_unconfirmed') && !(qa_get_logged_in_flags() & QA_USER_FLAGS_EMAIL_CONFIRMED) )
+				if (qa_opt('confirm_user_emails') && qa_opt('moderate_unconfirmed') && !(qa_get_logged_in_flags() & QA_USER_FLAGS_EMAIL_CONFIRMED) )
 					$reason='confirm';
 				elseif (qa_opt('moderate_by_points') && (qa_get_logged_in_points() < qa_opt('moderate_points_limit')))
 					$reason='points';
@@ -1020,134 +831,7 @@ in a category for which they have elevated privileges).
 			
 		return '';
 	}
-
-
-	function qa_set_form_security_key()
-/*
-	Set or extend the cookie in browser of non logged-in users which identifies them for the purposes of form security (anti-CSRF protection)
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-
-		global $qa_form_key_cookie_set;
-		
-		if ( (!qa_is_logged_in()) && !@$qa_form_key_cookie_set) {
-			$qa_form_key_cookie_set=true;
-		
-			if (strlen(@$_COOKIE['qa_key'])!=QA_FORM_KEY_LENGTH) {
-				require_once QA_INCLUDE_DIR.'qa-util-string.php';
-				$_COOKIE['qa_key']=qa_random_alphanum(QA_FORM_KEY_LENGTH);
-			}
-			
-			setcookie('qa_key', $_COOKIE['qa_key'], time()+2*QA_FORM_EXPIRY_SECS, '/', QA_COOKIE_DOMAIN); // extend on every page request
-		}
-	}
 	
-	
-	function qa_calc_form_security_hash($action, $timestamp)
-/*
-	Return the form security (anti-CSRF protection) hash for an $action (any string), that can be performed within
-	QA_FORM_EXPIRY_SECS of $timestamp (in unix seconds) by the current user.
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-		
-		$salt=qa_opt('form_security_salt');
-		
-		if (qa_is_logged_in())
-			return sha1($salt.'/'.$action.'/'.$timestamp.'/'.qa_get_logged_in_userid().'/'.qa_get_logged_in_user_field('passsalt'));
-		else
-			return sha1($salt.'/'.$action.'/'.$timestamp.'/'.@$_COOKIE['qa_key']); // lower security for non logged in users - code+cookie can be transferred
-	}
-	
-	
-	function qa_get_form_security_code($action)
-/*
-	Return the full form security (anti-CSRF protection) code for an $action (any string) performed within
-	QA_FORM_EXPIRY_SECS of now by the current user.
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-		
-		qa_set_form_security_key();
-		
-		$timestamp=qa_opt('db_time');
-		
-		return (int)qa_is_logged_in().'-'.$timestamp.'-'.qa_calc_form_security_hash($action, $timestamp);
-	}
-	
-	
-	function qa_check_form_security_code($action, $value)
-/*
-	Return whether $value matches the expected form security (anti-CSRF protection) code for $action (any string) and
-	that the code has not expired (if more than QA_FORM_EXPIRY_SECS have passed). Logs causes for suspicion.
-*/
-	{
-		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
-		
-		$reportproblems=array();
-		$silentproblems=array();
-		
-		if (!isset($value))
-			$silentproblems[]='code missing';
-
-		else if (!strlen($value))
-			$silentproblems[]='code empty';
-
-		else {
-			$parts=explode('-', $value);
-			
-			if (count($parts)==3) {
-				$loggedin=$parts[0];
-				$timestamp=$parts[1];
-				$hash=$parts[2];
-				$timenow=qa_opt('db_time');
-				
-				if ($timestamp>$timenow)
-					$reportproblems[]='time '.($timestamp-$timenow).'s in future';
-				elseif ($timestamp<($timenow-QA_FORM_EXPIRY_SECS))
-					$silentproblems[]='timeout after '.($timenow-$timestamp).'s';
-				
-				if (qa_is_logged_in()) {
-					if (!$loggedin)
-						$silentproblems[]='now logged in';
-					
-				} else {
-					if ($loggedin)
-						$silentproblems[]='now logged out';
-
-					else {
-						$key=@$_COOKIE['qa_key'];
-						
-						if (!isset($key))
-							$silentproblems[]='key cookie missing';
-						elseif (!strlen($key))
-							$silentproblems[]='key cookie empty';
-						else if (strlen($key)!=QA_FORM_KEY_LENGTH)
-							$reportproblems[]='key cookie '.$key.' invalid';
-					}
-				}
-
-				if (empty($silentproblems) && empty($reportproblems))
-					if (strtolower(qa_calc_form_security_hash($action, $timestamp))!=strtolower($hash))
-						$reportproblems[]='code mismatch';
-
-			} else
-				$reportproblems[]='code '.$value.' malformed';
-		}
-		
-		if (count($reportproblems))
-			@error_log(
-				'PHP Question2Answer form security violation for '.$action.
-				' by '.(qa_is_logged_in() ? ('userid '.qa_get_logged_in_userid()) : 'anonymous').
-				' ('.implode(', ', array_merge($reportproblems, $silentproblems)).')'.
-				' on '.@$_SERVER['REQUEST_URI'].
-				' via '.@$_SERVER['HTTP_REFERER']
-			);
-		
-		return (empty($silentproblems) && empty($reportproblems));
-	}
-
 
 /*
 	Omit PHP closing tag to help avoid accidental output

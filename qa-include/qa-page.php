@@ -1,28 +1,5 @@
 <?php
 
-/*
-	Question2Answer (c) Gideon Greenspan
-
-	http://www.question2answer.org/
-
-	
-	File: qa-include/qa-page.php
-	Version: See define()s at top of qa-include/qa-base.php
-	Description: Routing and utility functions for page requests
-
-
-	This program is free software; you can redistribute it and/or
-	modify it under the terms of the GNU General Public License
-	as published by the Free Software Foundation; either version 2
-	of the License, or (at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	More about this license: http://www.question2answer.org/license.php
-*/
 
 	if (!defined('QA_VERSION')) { // don't allow this page to be requested directly from browser
 		header('Location: ../');
@@ -71,12 +48,8 @@
 				qa_db_queue_pending_select('loggedinuser', qa_db_user_account_selectspec($loginuserid, true));
 				
 			qa_db_queue_pending_select('notices', qa_db_user_notices_selectspec($loginuserid));
-			qa_db_queue_pending_select('favoritenonqs', qa_db_user_favorite_non_qs_selectspec($loginuserid));
-			qa_db_queue_pending_select('userlimits', qa_db_user_limits_selectspec($loginuserid));
-			qa_db_queue_pending_select('userlevels', qa_db_user_levels_selectspec($loginuserid, true));
 		}
 	
-		qa_db_queue_pending_select('iplimits', qa_db_ip_limits_selectspec(qa_remote_ip_address()));
 		qa_db_queue_pending_select('navpages', qa_db_pages_selectspec(array('B', 'M', 'O', 'F')));
 		qa_db_queue_pending_select('widgets', qa_db_widgets_selectspec());
 	}
@@ -119,7 +92,7 @@
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
-		global $qa_page_error_html;
+		global $qa_vote_error_html;
 		
 		if (qa_is_http_post())
 			foreach ($_POST as $field => $value) {
@@ -127,63 +100,48 @@
 					@list($dummy, $postid, $vote, $anchor)=explode('_', $field);
 					
 					if (isset($postid) && isset($vote)) {
-						if (!qa_check_form_security_code('vote', qa_post_text('code')))
-							$qa_page_error_html=qa_lang_html('misc/form_security_again');
+						require_once QA_INCLUDE_DIR.'qa-app-votes.php';
+						require_once QA_INCLUDE_DIR.'qa-db-selects.php';
 						
-						else {
-							require_once QA_INCLUDE_DIR.'qa-app-votes.php';
-							require_once QA_INCLUDE_DIR.'qa-db-selects.php';
-							
-							$userid=qa_get_logged_in_userid();
-							
-							$post=qa_db_select_with_pending(qa_db_full_post_selectspec($userid, $postid));
-							$qa_page_error_html=qa_vote_error_html($post, $vote, $userid, qa_request());
-		
-							if (!$qa_page_error_html) {
-								qa_vote_set($post, $userid, qa_get_logged_in_handle(), qa_cookie_get(), $vote);
-								qa_redirect(qa_request(), $_GET, null, null, $anchor);
-							}
-							break;
+						$userid=qa_get_logged_in_userid();
+						
+						$post=qa_db_select_with_pending(qa_db_full_post_selectspec($userid, $postid));
+						$qa_vote_error_html=qa_vote_error_html($post, $vote, $userid, qa_request());
+	
+						if (!$qa_vote_error_html) {
+							qa_vote_set($post, $userid, qa_get_logged_in_handle(), qa_cookie_get(), $vote);
+							qa_redirect(qa_request(), $_GET, null, null, $anchor);
 						}
+						break;
 					}
 				
 				} elseif (strpos($field, 'favorite_')===0) { // favorites...
 					@list($dummy, $entitytype, $entityid, $favorite)=explode('_', $field);
 					
 					if (isset($entitytype) && isset($entityid) && isset($favorite)) {
-						if (!qa_check_form_security_code('favorite-'.$entitytype.'-'.$entityid, qa_post_text('code')))
-							$qa_page_error_html=qa_lang_html('misc/form_security_again');
+						require_once QA_INCLUDE_DIR.'qa-app-favorites.php';
 						
-						else {
-							require_once QA_INCLUDE_DIR.'qa-app-favorites.php';
-							
-							qa_user_favorite_set(qa_get_logged_in_userid(), qa_get_logged_in_handle(), qa_cookie_get(), $entitytype, $entityid, $favorite);
-							qa_redirect(qa_request(), $_GET);
-						}
+						qa_user_favorite_set(qa_get_logged_in_userid(), qa_get_logged_in_handle(), qa_cookie_get(), $entitytype, $entityid, $favorite);
+						qa_redirect(qa_request(), $_GET);
 					}
 					
 				} elseif (strpos($field, 'notice_')===0) { // notices...
 					@list($dummy, $noticeid)=explode('_', $field);
 					
 					if (isset($noticeid)) {
-						if (!qa_check_form_security_code('notice-'.$noticeid, qa_post_text('code')))
-							$qa_page_error_html=qa_lang_html('misc/form_security_again');
-							
-						else {
-							if ($noticeid=='visitor')
-								setcookie('qa_noticed', 1, time()+86400*3650, '/', QA_COOKIE_DOMAIN);
-							
-							elseif ($noticeid=='welcome') {
-								require_once QA_INCLUDE_DIR.'qa-db-users.php';
-								qa_db_user_set_flag(qa_get_logged_in_userid(), QA_USER_FLAGS_WELCOME_NOTICE, false);
-	
-							} else {
-								require_once QA_INCLUDE_DIR.'qa-db-notices.php';
-								qa_db_usernotice_delete(qa_get_logged_in_userid(), $noticeid);
-							}
-	
-							qa_redirect(qa_request(), $_GET);
+						if ($noticeid=='visitor')
+							setcookie('qa_noticed', 1, time()+86400*3650, '/', QA_COOKIE_DOMAIN);
+						
+						elseif ($noticeid=='welcome') {
+							require_once QA_INCLUDE_DIR.'qa-db-users.php';
+							qa_db_user_set_flag(qa_get_logged_in_userid(), QA_USER_FLAGS_WELCOME_NOTICE, false);
+
+						} else {
+							require_once QA_INCLUDE_DIR.'qa-db-notices.php';
+							qa_db_usernotice_delete(qa_get_logged_in_userid(), $noticeid);
 						}
+
+						qa_redirect(qa_request(), $_GET);
 					}
 				}
 			}
@@ -223,8 +181,6 @@
 			$_COOKIE['qa_admin_last']=$requestlower; // for navigation tab now...
 			setcookie('qa_admin_last', $_COOKIE['qa_admin_last'], 0, '/', QA_COOKIE_DOMAIN); // ...and in future
 		}
-		
-		qa_set_form_security_key();
 
 		return $qa_content;
 	}
@@ -264,8 +220,8 @@
 			if (qa_get_logged_in_level()>=QA_USER_LEVEL_ADMIN) {
 				if (!isset($qa_content['error']))
 					$qa_content['error']=strtr(qa_lang_html('admin/maintenance_admin_only'), array(
-						'^1' => '<a href="'.qa_path_html('admin/general').'">',
-						'^2' => '</a>',
+						'^1' => '<A HREF="'.qa_path_html('admin/general').'">',
+						'^2' => '</A>',
 					));
 	
 			} else {
@@ -274,33 +230,22 @@
 			}
 		}
 	
-	//	Handle new users who must confirm their email now, or must be approved before continuing
+	//	Handle new users who must confirm their email now
 	
 		$userid=qa_get_logged_in_userid();
-		if (isset($userid) && ($requestlower!='confirm') && ($requestlower!='account')) {
-			$flags=qa_get_logged_in_flags();
-			
-			if ( ($flags & QA_USER_FLAGS_MUST_CONFIRM) && (!($flags & QA_USER_FLAGS_EMAIL_CONFIRMED)) && qa_opt('confirm_user_emails') ) {
+		if (isset($userid) && (qa_get_logged_in_flags() & QA_USER_FLAGS_MUST_CONFIRM))
+			if ( ($requestlower!='confirm') && ($requestlower!='account') ) {
 				$qa_content=qa_content_prepare();
 				$qa_content['title']=qa_lang_html('users/confirm_title');
 				$qa_content['error']=strtr(qa_lang_html('users/confirm_required'), array(
-					'^1' => '<a href="'.qa_path_html('confirm').'">',
-					'^2' => '</a>',
-				));
-			
-			} elseif ( ($flags & QA_USER_FLAGS_MUST_APPROVE) && (qa_get_logged_in_level()<QA_USER_LEVEL_APPROVED) && qa_opt('moderate_users') ) {
-				$qa_content=qa_content_prepare();
-				$qa_content['title']=qa_lang_html('users/approve_title');
-				$qa_content['error']=strtr(qa_lang_html('users/approve_required'), array(
-					'^1' => '<a href="'.qa_path_html('account').'">',
-					'^2' => '</a>',
+					'^1' => '<A HREF="'.qa_path_html('confirm').'">',
+					'^2' => '</A>',
 				));
 			}
-		}
 	
 	//	Combine various Javascript elements in $qa_content into single array for theme layer
 	
-		$script=array('<script type="text/javascript">');
+		$script=array('<SCRIPT TYPE="text/javascript"><!--');
 		
 		if (isset($qa_content['script_var']))
 			foreach ($qa_content['script_var'] as $var => $value)
@@ -337,22 +282,20 @@
 					$script[]="\t".$scriptline;
 			}
 	
-			$script[]='};';
+			$script[]='}';
 		}
 		
-		$script[]='</script>';
+		$script[]='//--></SCRIPT>';
 		
 		if (isset($qa_content['script_rel'])) {
 			$uniquerel=array_unique($qa_content['script_rel']); // remove any duplicates
 			foreach ($uniquerel as $script_rel)
-				$script[]='<script src="'.qa_html(qa_path_to_root().$script_rel).'" type="text/javascript"></script>';
+				$script[]='<SCRIPT SRC="'.qa_html(qa_path_to_root().$script_rel).'" TYPE="text/javascript"></SCRIPT>';
 		}
 		
-		if (isset($qa_content['script_src'])) {
-			$uniquesrc=array_unique($qa_content['script_src']); // remove any duplicates
-			foreach ($uniquesrc as $script_src)
-				$script[]='<script src="'.qa_html($script_src).'" type="text/javascript"></script>';
-		}
+		if (isset($qa_content['script_src']))
+			foreach ($qa_content['script_src'] as $script_src)
+				$script[]='<SCRIPT SRC="'.qa_html($script_src).'" TYPE="text/javascript"></SCRIPT>';
 	
 		$qa_content['script']=$script;
 
@@ -397,7 +340,6 @@
 			'account' => 'qa-page-account.php',
 			'activity/' => 'qa-page-activity.php',
 			'admin/' => 'qa-page-admin-default.php',
-			'admin/approve' => 'qa-page-admin-approve.php',
 			'admin/categories' => 'qa-page-admin-categories.php',
 			'admin/flagged' => 'qa-page-admin-flagged.php',
 			'admin/hidden' => 'qa-page-admin-hidden.php',
@@ -458,7 +400,7 @@
 	{
 		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
-		global $qa_template, $qa_page_error_html;
+		global $qa_template, $qa_vote_error_html;
 		
 		if (QA_DEBUG_PERFORMANCE)
 			qa_usage_mark('control');
@@ -573,9 +515,7 @@
 				'label' => qa_lang_html('main/nav_users'),
 			);
 			
-		// Only the 'level' permission error prevents the menu option being shown - others reported on qa-page-ask.php
-
-		if (qa_opt('nav_ask') && (qa_user_maximum_permit_error('permit_post_q')!='level'))
+		if (qa_opt('nav_ask') && (qa_user_permit_error('permit_post_q')!='level'))
 			$qa_content['navigation']['main']['ask']=array(
 				'url' => qa_path_html('ask', (qa_using_categories() && strlen($lastcategoryid)) ? array('cat' => $lastcategoryid) : null),
 				'label' => qa_lang_html('main/nav_ask'),
@@ -584,9 +524,9 @@
 		
 		if (
 			(qa_get_logged_in_level()>=QA_USER_LEVEL_ADMIN) ||
-			(!qa_user_maximum_permit_error('permit_moderate')) ||
-			(!qa_user_maximum_permit_error('permit_hide_show')) ||
-			(!qa_user_maximum_permit_error('permit_delete_hidden'))
+			(!qa_user_permit_error('permit_moderate')) ||
+			(!qa_user_permit_error('permit_hide_show')) ||
+			(!qa_user_permit_error('permit_delete_hidden'))
 		)
 			$qa_content['navigation']['main']['admin']=array(
 				'url' => qa_path_html('admin'),
@@ -595,10 +535,10 @@
 
 		
 		$qa_content['search']=array(
-			'form_tags' => 'method="get" action="'.qa_path_html('search').'"',
+			'form_tags' => 'METHOD="GET" ACTION="'.qa_path_html('search').'"',
 			'form_extra' => qa_path_form_html('search'),
 			'title' => qa_lang_html('main/search_title'),
-			'field_tags' => 'name="q"',
+			'field_tags' => 'NAME="q"',
 			'button_label' => qa_lang_html('main/search_button'),
 		);
 		
@@ -631,12 +571,9 @@
 					$module=qa_load_module('widget', $widget['title']);
 					
 					if (
-						isset($module) &&
-						method_exists($module, 'allow_template') &&
+						isset($module) && method_exists($module, 'allow_template') &&
 						$module->allow_template((substr($qa_template, 0, 7)=='custom-') ? 'custom' : $qa_template) &&
-						method_exists($module, 'allow_region') &&
-						$module->allow_region($region) &&
-						method_exists($module, 'output_widget')
+						method_exists($module, 'allow_region') && $module->allow_region($region) && method_exists($module, 'output_widget')
 					)
 						$qa_content['widgets'][$region][$place][]=$module; // if module loaded and happy to be displayed here, tell theme about it
 				}
@@ -648,12 +585,12 @@
 		$logoheight=qa_opt('logo_height');
 		
 		if ($logoshow)
-			$qa_content['logo']='<a href="'.qa_path_html('').'" class="qa-logo-link" title="'.qa_html(qa_opt('site_title')).'">'.
-				'<img src="'.qa_html(is_numeric(strpos($logourl, '://')) ? $logourl : qa_path_to_root().$logourl).'"'.
-				($logowidth ? (' width="'.$logowidth.'"') : '').($logoheight ? (' height="'.$logoheight.'"') : '').
-				' border="0" alt="'.qa_html(qa_opt('site_title')).'"/></a>';
+			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link" TITLE="'.qa_html(qa_opt('site_title')).'">'.
+				'<IMG SRC="'.qa_html(is_numeric(strpos($logourl, '://')) ? $logourl : qa_path_to_root().$logourl).'"'.
+				($logowidth ? (' WIDTH="'.$logowidth.'"') : '').($logoheight ? (' HEIGHT="'.$logoheight.'"') : '').
+				' BORDER="0" ALT="'.qa_html(qa_opt('site_title')).'"/></A>';
 		else
-			$qa_content['logo']='<a href="'.qa_path_html('').'" class="qa-logo-link">'.qa_html(qa_opt('site_title')).'</a>';
+			$qa_content['logo']='<A HREF="'.qa_path_html('').'" CLASS="qa-logo-link">'.qa_html(qa_opt('site_title')).'</A>';
 
 		$topath=qa_get('to'); // lets user switch between login and register without losing destination page
 
@@ -722,13 +659,13 @@
 			if (!empty($userlinks['login']))
 				$qa_content['navigation']['user']['login']=array(
 					'url' => qa_html(@$userlinks['login']),
-					'label' => qa_lang_html('main/nav_login'),
+					'label' => 'Have an account?'.' <i class="icon-share-alt"></i> '.qa_lang_html('main/nav_login'),
 				);
 				
 			if (!empty($userlinks['register']))
 				$qa_content['navigation']['user']['register']=array(
 					'url' => qa_html(@$userlinks['register']),
-					'label' => qa_lang_html('main/nav_register'),
+					'label' => '<i class="icon-edit"></i> '.qa_lang_html('main/nav_register'),
 				);
 		}
 
@@ -748,7 +685,7 @@
 		$qa_content['script_rel'][]='qa-content/qa-page.js?'.QA_VERSION;
 		
 		if ($voting)
-			$qa_content['error']=@$qa_page_error_html;
+			$qa_content['error']=@$qa_vote_error_html;
 			
 		$qa_content['script_var']=array(
 			'qa_root' => qa_path_to_root(),

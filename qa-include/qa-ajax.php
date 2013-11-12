@@ -1,28 +1,5 @@
 <?php
 
-/*
-	Question2Answer (c) Gideon Greenspan
-
-	http://www.question2answer.org/
-
-	
-	File: qa-include/qa-ajax.php
-	Version: See define()s at top of qa-include/qa-base.php
-	Description: Front line of response to Ajax requests, routing as appropriate
-
-
-	This program is free software; you can redistribute it and/or
-	modify it under the terms of the GNU General Public License
-	as published by the Free Software Foundation; either version 2
-	of the License, or (at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	More about this license: http://www.question2answer.org/license.php
-*/
 
 //	Output this header as early as possible
 
@@ -74,8 +51,6 @@
 		'click_c' => 'qa-ajax-click-comment.php',
 		'click_admin' => 'qa-ajax-click-admin.php',
 		'show_cs' => 'qa-ajax-show-comments.php',
-		'wallpost' => 'qa-ajax-wallpost.php',
-		'click_wall' => 'qa-ajax-click-wall.php',
 	);
 	
 	$operation=qa_post_text('qa_operation');

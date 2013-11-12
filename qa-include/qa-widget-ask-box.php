@@ -74,30 +74,39 @@
 				$params=array('cat' => end($qa_content['categoryids']));
 			else
 				$params=null;
-?>
-<div class="qa-ask-box">
-	<form method="post" action="<?php echo qa_path_html('ask', $params); ?>">
-		<table class="qa-form-tall-table" style="width:100%">
-			<tr style="vertical-align:middle;">
-				<td class="qa-form-tall-label" style="padding:8px; white-space:nowrap; <?php echo ($region=='side') ? 'padding-bottom:0;' : 'text-align:right;'?>" width="1">
+				
+				/* ORIGINAL
+				
+				<p>
+	<FORM METHOD="POST" ACTION="<?php echo qa_path_html('ask', $params); ?>">
+		<TABLE CLASS="qa-form-tall-table" STYLE="width:100%">
+			<TR STYLE="vertical-align:middle;">
+				<TD CLASS="qa-form-tall-label" STYLE="padding:8px; white-space:nowrap; <?php echo ($region=='side') ? 'padding-bottom:0;' : 'text-align:right;'?>" WIDTH="1">
 					<?php echo strtr(qa_lang_html('question/ask_title'), array(' ' => '&nbsp;'))?>:
-				</td>
+				</TD>
 <?php
 			if ($region=='side') {
 ?>
-			</tr>
-			<tr>
+			</TR>
+			<TR>
 <?php			
 			}
 ?>
-				<td class="qa-form-tall-data" style="padding:8px;" width="*">
-					<input name="title" type="text" class="qa-form-tall-text" style="width:95%;">
-				</td>
-			</tr>
-		</table>
-		<input type="hidden" name="doask1" value="1">
-	</form>
-</div>
+				<TD CLASS="qa-form-tall-data" STYLE="padding:8px;" WIDTH="*">
+					<INPUT NAME="title" TYPE="text" CLASS="input span23">
+				</TD>
+			</TR>
+		</TABLE>
+		<INPUT TYPE="hidden" NAME="doask1" VALUE="1">
+	</FORM>
+</p>
+
+*/
+?>
+	<FORM METHOD="POST" ACTION="<?php echo qa_path_html('ask', $params); ?>">
+					<INPUT NAME="title" TYPE="text" CLASS="input span23">
+	<INPUT TYPE="hidden" NAME="doask1" VALUE="1">
+	</FORM>
 <?php
 		}
 	
