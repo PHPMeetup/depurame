@@ -1,3 +1,5 @@
 qa-config.php
 .htaccess
 qa-plugin/q2a-open-login/.gitignore
+
+wordpress/wp-config.php
