@@ -1,0 +1,21 @@
+<template name="comment_reply">
+  <div class="grid comment-page single-post">
+    
+    {{#with post}}
+      <div class="posts">
+        {{> UI.dynamic template=post_item}}
+      </div>
+    {{/with}}
+
+    {{#with comment}}
+      <ul class="selected-comment">
+       {{> UI.dynamic template=comment_item}}
+      </ul>
+    {{/with}}
+
+    {{#if canComment}}
+      {{> UI.dynamic template=comment_form}}
+    {{/if}}
+
+  </div>
+</template>
